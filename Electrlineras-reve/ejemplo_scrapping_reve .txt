@@ -1,0 +1,82 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+
+# Configurar Selenium
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--window-size=1920,1080")
+driver = webdriver.Chrome(service=Service(), options=options)
+
+# Abrir el mapa
+driver.get("https://www.mapareve.es/mapa-puntos-recarga")
+wait = WebDriverWait(driver, 20)
+wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".leaflet-marker-icon")))
+
+# Hacer clic en los puntos del mapa
+puntos = driver.find_elements(By.CSS_SELECTOR, ".leaflet-marker-icon")
+urls = []
+
+for i, punto in enumerate(puntos[:30]):  # Limita a 30 para pruebas
+    try:
+        punto.click()
+        time.sleep(2)
+        enlace = driver.find_element(By.CSS_SELECTOR, "a[href*='/emplazamiento/']").get_attribute("href")
+        if enlace not in urls:
+            urls.append(enlace)
+    except Exception as e:
+        print(f"Error al capturar URL del punto {i}: {e}")
+
+driver.quit()
+
+# Extraer datos de cada URL
+def extraer_emplazamiento(url):
+    try:
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, "html.parser")
+
+        nombre = soup.find("h1").text.strip() if soup.find("h1") else None
+        direccion = soup.find("div", class_="direccion").text.strip() if soup.find("div", class_="direccion") else None
+        potencia = soup.find("span", class_="potencia").text.strip() if soup.find("span", class_="potencia") else None
+        estado = soup.find("span", class_="estado").text.strip() if soup.find("span", class_="estado") else None
+        operador = soup.find("div", class_="operador").text.strip() if soup.find("div", class_="operador") else None
+
+        return {
+            "URL": url,
+            "Nombre": nombre,
+            "Dirección": direccion,
+            "Potencia": potencia,
+            "Estado": estado,
+            "Operador": operador
+        }
+    except Exception as e:
+        print(f"Error al extraer datos de {url}: {e}")
+        return {
+            "URL": url,
+            "Nombre": None,
+            "Dirección": None,
+            "Potencia": None,
+            "Estado": None,
+            "Operador": None
+        }
+
+# Recopilar datos con pausa y guardado intermedio
+datos = []
+for i, u in enumerate(urls):
+    datos.append(extraer_emplazamiento(u))
+    time.sleep(1)  # Pausa entre peticiones
+    if i % 10 == 0:  # Guardado intermedio cada 10
+        pd.DataFrame(datos).to_csv("puntos_reve_parcial.csv", index=False)
+        print(f"Guardado parcial tras {i+1} puntos")
+
+# Guardado final
+df = pd.DataFrame(datos)
+df.to_csv("puntos_reve.csv", index=False)
+print("Datos guardados en puntos_reve.csv")
