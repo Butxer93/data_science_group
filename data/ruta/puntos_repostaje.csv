@@ -1,0 +1,23 @@
+punto_id,nombre_estacion,marca,latitud,longitud,carretera,direccion,servicios
+P001,Estación León Norte,Repsol,42.6123,-5.5634,A-66,León - Astorga,24h|tienda|restaurante
+P002,Área Servicio Benavente,Cepsa,42.0087,-5.6723,A-52,AP-52 Benavente,24h|tienda|WC|cafeteria
+P003,Estación Zamora Este,BP,41.4967,-5.7234,A-11,Salida Zamora Este,tienda|WC|taller
+P004,Área Servicio Tordesillas,Shell,41.4989,-5.0145,A-62,AP-62 Tordesillas,24h|tienda|restaurante|hotel
+P005,Estación Valladolid Norte,Galp,41.6534,-4.7198,A-62,Salida Valladolid Norte,24h|tienda|WC
+P006,Área Servicio Dueñas,Repsol,42.0398,-4.3534,A-62,AP-62 Dueñas,24h|tienda|restaurante
+P007,Estación Burgos Sur,Cepsa,42.3089,-3.7267,A-1,Salida Burgos Sur,tienda|WC|taller
+P008,Área Servicio Miranda,Shell,42.6823,-2.9423,A-1,AP-1 Miranda de Ebro,24h|tienda|restaurante
+P009,Estación Vitoria Sur,BP,42.8223,-2.6712,AP-1,Salida Vitoria Sur,tienda|WC
+P010,Área Servicio Alsasua,Repsol,42.8823,-2.1634,AP-15,AP-15 Alsasua,24h|tienda|cafeteria
+P011,Estación Pamplona Sur,Galp,42.7823,-1.6412,A-15,Salida Pamplona Sur,tienda|WC|taller
+P012,Área Servicio Tudela,Cepsa,42.0623,-1.6023,A-68,A-68 Tudela,24h|tienda|restaurante
+P013,Estación Zaragoza Oeste,Shell,41.6623,-0.9423,A-2,Salida Zaragoza Oeste,24h|tienda|WC
+P014,Área Servicio Fraga,Repsol,41.5223,-0.3534,A-2,AP-2 Fraga,24h|tienda|restaurante
+P015,Estación Lleida Este,BP,41.6223,0.6423,A-2,Salida Lleida Este,tienda|WC
+P016,Área Servicio Cervera,Cepsa,41.6723,1.2701,A-2,AP-2 Cervera,24h|tienda|cafeteria
+P017,Estación Igualada,Galp,41.5756,1.6112,A-2,Salida Igualada,tienda|WC|taller
+P018,Área Servicio Martorell,Shell,41.4723,1.9223,A-2,AP-2 Martorell,24h|tienda|restaurante
+P019,Estación Barcelona Oeste,Repsol,41.3823,2.0534,A-2,Salida Barcelona Oeste,24h|tienda|WC
+P020,Estación Granollers,BP,41.6056,2.2801,A-7,Salida Granollers,tienda|WC
+P021,Área Servicio Hostalric,Cepsa,41.7623,2.6312,A-7,AP-7 Hostalric,24h|tienda|restaurante
+P022,Estación Girona Sur,Shell,41.9623,2.8201,A-7,Salida Girona Sur,24h|tienda|WC|taller

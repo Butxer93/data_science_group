@@ -1,0 +1,3 @@
+station_id,brand,lat,lon,fuel_type,price_per_liter,wait_min
+S001,Repsol,40.5,-3.7,diesel,1.62,5
+S002,Cepsa,40.6,-3.8,gasoline,1.68,3
