@@ -24,17 +24,18 @@ def leer_csv(nombre: str) -> pd.DataFrame:
 def health():
     return {"ok": True, "modelo_cargado": cargar_ranker_repostaje() is not None}
 
+# ...
 @app.post("/ml/entrenar_ranker")
-def entrenar_ranker(syntetico: bool = True):
+def entrenar_ranker(syntetico: bool = True, optimized: bool = False):
     puntos = leer_csv("puntos_repostaje.csv")
     if puntos.empty:
-        raise HTTPException(400, "data/puntos_repostaje.csv no encontrado.")
-    # Si faltan columnas de precio/espera/combustible, se sintetizan dentro del builder
+        raise HTTPException(400, "data/puntos_repostaje.csv no encontrado. Genera datos sintéticos primero.")
     df = construir_entrenamiento_sintetico(puntos, n_consultas=250, cand_por_q=6) if syntetico \
          else construir_entrenamiento_sintetico(puntos)
-    pipe, meta = ajustar_pipeline(df)   # LGBM Ranker (fallback RF)
+    pipe, meta = ajustar_pipeline(df, optimized=optimized)   # <<--- aquí
     guardar_ranker_repostaje(pipe)
     return {"ok": True, "meta": meta, "filas_entrenamiento": int(len(df))}
+
 
 @app.post("/recomendaciones/repostaje")
 def recomendaciones_repostaje(
@@ -111,3 +112,4 @@ def recomendaciones_repostaje(
         pipe=pipe
     )
     return {"estaciones": ranked, "prioridad": prioridad, "modelo_usado": bool(pipe)}
+

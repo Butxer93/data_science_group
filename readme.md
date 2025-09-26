@@ -9,6 +9,22 @@
 uv sync
 
 ```
+## Generar datos sintétios
+
+```bash
+uv run python scripts/generar_datos.py
+```
+
+Esto creará:
+
+- data/puntos_repostaje.csv (≈350 filas)
+
+- data/rutas.csv (5 rutas × 70 puntos = 350 filas)
+
+- data/puntos_recarga_electrica.csv (≈220 filas)
+
+- data/beneficios_tarjeta.csv (≈6 filas)
+
 ## Ejecutar servicio de Repostaje (ranking combustible)
 
 ```bash
