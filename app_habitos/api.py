@@ -1,3 +1,4 @@
+# app_habitos/api.py
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
