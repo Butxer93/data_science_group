@@ -1,3 +1,0 @@
-route_id,vehicle_id,start_lat,start_lon,end_lat,end_lon,avoid_tolls
-R001,V001,40.4168,-3.7038,41.3874,2.1686,True
-R002,V003,40.4168,-3.7038,39.4699,-0.3763,False

@@ -1,3 +1,0 @@
-punto_ev_id,nombre_punto,operador,latitud,longitud,carretera,direccion,tipo_conector,potencia_kw,precio_kwh,disponible_24h
-E001,Iberdrola Fast,Iberdrola,40.55,-3.65,A-1,Área Norte,CCS2,50,0.45,si
-E002,Endesa X Alta,Endesa,39.9,-0.4,AP-7,Área Este,CCS2,100,0.40,no

@@ -1,2 +1,0 @@
-charge_id,name,lat,lon,network,plug_types,max_power_kw,price_eur_per_kwh,wait_min
-123,OCM Demo,40.5,-3.7,DemoNet,"CCS2,Type2",50,,
