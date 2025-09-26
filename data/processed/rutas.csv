@@ -1,0 +1,4 @@
+ruta_id,descripcion,latitud,longitud,carretera,km_desde_origen
+R001,Madrid a Barcelona,40.4168,-3.7038,A-2,0
+R001,Madrid a Barcelona,40.9,-2.8,A-2,150
+R001,Madrid a Barcelona,41.3874,2.1686,AP-2,620

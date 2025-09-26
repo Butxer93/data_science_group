@@ -1,0 +1,3 @@
+tarjeta,centimos_litro,porcentaje,estaciones_incluidas
+MiTarjeta,3,,Estación Norte|Estación Sur
+SuperAhorrador,,2.5,      # porcentaje 2.5% en todas (si vacío o sin match estricto aplicamos a todas)
