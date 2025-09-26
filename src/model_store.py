@@ -1,7 +1,7 @@
 from pathlib import Path
 import os, joblib, json
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 MODELS = ROOT / "models"
 
 # Rutas de artefactos

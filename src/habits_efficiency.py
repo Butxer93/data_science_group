@@ -1,4 +1,3 @@
-# src/ml/habits_efficiency.py
 import numpy as np, pandas as pd, json
 from pathlib import Path
 from typing import Tuple, Dict, Any, List
@@ -15,7 +14,7 @@ import joblib
 from .model_store import guardar_modelos_habitos, cargar_modelos_habitos
 
 # ----- Config rutas robustas (sin depender de constantes importadas) -----
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT_DIR / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 HABITS_RULES_PATH = MODELS_DIR / "habits_rules.json"

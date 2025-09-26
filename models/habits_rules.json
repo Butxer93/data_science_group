@@ -1,0 +1,16 @@
+{
+  "rules_by_cluster": {
+    "0": [
+      "Buenos hábitos; mantener formación"
+    ],
+    "1": [
+      "Anticipar frenadas (evitar >5/100km)"
+    ],
+    "2": [
+      "Reducir ralentí (>12%) con apagado en esperas >2 min"
+    ],
+    "3": [
+      "Buenos hábitos; mantener formación"
+    ]
+  }
+}

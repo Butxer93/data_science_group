@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 
 from src.utils import distancia_a_polilinea_km, generar_polilinea_desde_rutas
-from src.ml.rank_repostaje import rankear_candidatos
-from src.ml.train_ranker import construir_entrenamiento_sintetico, ajustar_pipeline
-from src.ml.model_store import cargar_ranker_repostaje, guardar_ranker_repostaje, pesos_por_politica
+from src.rank_repostaje import rankear_candidatos
+from src.train_ranker import construir_entrenamiento_sintetico, ajustar_pipeline
+from src.model_store import cargar_ranker_repostaje, guardar_ranker_repostaje, pesos_por_politica
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -25,7 +25,7 @@ def health():
     return {"ok": True, "modelo_cargado": cargar_ranker_repostaje() is not None}
 
 # ...
-@app.post("/ml/entrenar_ranker")
+@app.post("/train_ranker")
 def entrenar_ranker(syntetico: bool = True, optimized: bool = False):
     puntos = leer_csv("puntos_repostaje.csv")
     if puntos.empty:
