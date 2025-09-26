@@ -1,4 +1,4 @@
-punto_id,nombre_punto,operador,latitud,longitud,carretera,direccion,tipo_conector,potencia_kw,precio_kwh,disponible_24h
+punto_ev_id,nombre_punto,operador,latitud,longitud,carretera,direccion,tipo_conector,potencia_kw,precio_kwh,disponible_24h
 E001,León Centro Tesla,Tesla,42.5978,-5.5645,Centro León,Av. Padre Isla 48,Type2|CCS2,150,0.45,Si
 E002,Benavente Iberdrola,Iberdrola,42.0087,-5.6723,A-52,Área Servicio Benavente,CCS2|CHAdeMO,50,0.35,Si
 E003,Zamora Endesa X,Endesa X,41.4967,-5.7234,A-11,Centro Comercial Zamora,Type2|CCS2,22,0.30,No

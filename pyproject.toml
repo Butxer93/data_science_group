@@ -1,37 +1,45 @@
 [project]
-name = "DESAFIO_R3"
+name = "desafio-r3"
 version = "0.1.0"
-description = "Recomendador de repostajes/carga con ahorro y sostenibilidad (FastAPI)."
+description = "Recomendador de repostajes/carga con ahorro y sostenibilidad (FastAPI sin clases)."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
+# Dependencias SIN frontend; solo backend y ML para los modelos planteados
 dependencies = [
-  "fastapi>=0.115.0",
-  "pandas>=2.0",
+  "fastapi[standard]>=0.115.0",
+  "pandas>=2.2",
   "numpy>=1.26",
-  "scikit-learn>=1.3",
-  "lightgbm>=4.0",
+  "scikit-learn>=1.4",
+  "lightgbm>=4.0", # LTR con LGBM Ranker # para endpoints de ingestión de ficheros (CSV/JSON)
   "python-multipart>=0.0.9",
+  "requests>=2.32.5",
 ]
 
 [project.optional-dependencies]
 dev = [
   "httpx>=0.27",
-  "ruff>=0.5",         # lint
-  "black>=24.8.0",     # format
+  "ruff>=0.5",
+  "black>=24.8.0"
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Indicamos a Hatch qué paquetes incluir: app/ y scr/
+[tool.hatch.build.targets.wheel]
+packages = ["app", "src"]
+
+[tool.hatch.build.targets.sdist]
+include = ["app", "src", "data", "models", "README.md", "pyproject.toml"]
+
 [tool.uv]
-# uv gestionará el virtualenv automáticamente en .venv
 managed = true
 
 [tool.black]
 line-length = 100
-target-version = ["py310"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 100

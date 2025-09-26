@@ -1,4 +1,4 @@
-punto_id,descripcion,latitud,longitud,carretera,km_desde_origen
+ruta_id,descripcion,latitud,longitud,carretera,km_desde_origen
 R001,León - Inicio ruta,42.6006,-5.5706,N-120,0
 R002,Salida León hacia A-66,42.5894,-5.5534,A-66,5
 R003,Benavente - Enlace A-52,42.0045,-5.6754,A-52,85

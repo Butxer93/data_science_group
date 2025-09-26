@@ -1,4 +1,4 @@
-punto_id,nombre_estacion,marca,latitud,longitud,carretera,direccion,servicios
+punto_id,nombre_estacion,compania,latitud,longitud,carretera,direccion,servicios
 P001,Estación León Norte,Repsol,42.6123,-5.5634,A-66,León - Astorga,24h|tienda|restaurante
 P002,Área Servicio Benavente,Cepsa,42.0087,-5.6723,A-52,AP-52 Benavente,24h|tienda|WC|cafeteria
 P003,Estación Zamora Este,BP,41.4967,-5.7234,A-11,Salida Zamora Este,tienda|WC|taller

@@ -1,12 +1,13 @@
-# Desafio_R3 (FastAPI) — con uv
+
+# Desafio_R3 — FastAPI  + ML (LightGBM LTR)
 
 ## Requisitos
-- Python 3.10+
-- uv (https://docs.astral.sh/uv/)
+- Python **3.12**
+- **uv** (https://docs.astral.sh/uv/)
+  - Windows (PowerShell): `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
   - macOS: `brew install uv`
   - Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-  - Windows: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
 
-## Instalar dependencias
+## Instalación
 ```bash
 uv sync

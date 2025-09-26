@@ -1,4 +1,5 @@
 vehicle_id,plate,fuel_type,empty_weight_kg,vehicle_type,height_m,avg_consumption_l_100km,tank_capacity_l,emissions_factor_g_per_l,battery_kwh,efficiency_kwh_100km,max_dc_kw,plug_types
 V001,1234ABC,diesel,1800,van,2.0,8.5,70,2640,,,,
 V002,5678XYZ,gasoline,1500,car,1.5,6.2,55,2392,,,,
-V003,EV9999,ev,2100,car,1.6,0.0,0,0,75.0,18.0,120.0,"CCS2,Type2"
+V003,EV9999,ev,2100,car,1.6,0,0,0,75,18,120,"CCS2,Type2"
+
