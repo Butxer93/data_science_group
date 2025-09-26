@@ -1,19 +1,18 @@
 [project]
 name = "desafio-r3"
-version = "0.1.0"
-description = "Recomendador de repostajes/carga con ahorro y sostenibilidad (FastAPI sin clases)."
+version = "0.2.0"
+description = "App de recomendaciones de ahorro (repostaje) y hábitos eficientes para gestión de clientes/flotas."
 readme = "README.md"
 requires-python = ">=3.12"
 
-# Dependencias SIN frontend; solo backend y ML para los modelos planteados
 dependencies = [
   "fastapi[standard]>=0.115.0",
   "pandas>=2.2",
   "numpy>=1.26",
   "scikit-learn>=1.4",
-  "lightgbm>=4.0", # LTR con LGBM Ranker # para endpoints de ingestión de ficheros (CSV/JSON)
+  "lightgbm>=4.0",          # LTR Ranker (fallback si no disponible)
   "python-multipart>=0.0.9",
-  "requests>=2.32.5",
+  "joblib>=1.4",
 ]
 
 [project.optional-dependencies]
@@ -27,12 +26,11 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Indicamos a Hatch qué paquetes incluir: app/ y scr/
 [tool.hatch.build.targets.wheel]
-packages = ["app", "src"]
+packages = ["app_repostaje", "app_habitos", "src"]
 
 [tool.hatch.build.targets.sdist]
-include = ["app", "src", "data", "models", "README.md", "pyproject.toml"]
+include = ["app_repostaje", "app_habitos", "src", "data", "models", "README.md", "pyproject.toml"]
 
 [tool.uv]
 managed = true

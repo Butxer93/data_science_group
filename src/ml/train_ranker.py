@@ -3,61 +3,68 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-NUM = ["delta_price","detour_km","wait_min","liters_needed"]
-CAT = ["brand","fuel_type","vehicle_type"]
+NUM = ["delta_precio","desvio_km","minutos_espera","litros_necesarios"]
+CAT = ["marca","tipo_combustible","carretera"]
 
-def build_synthetic_training(df_stations: pd.DataFrame, n_queries=200, cand_per_q=5):
-    rng = np.random.default_rng(42)
-    rows=[]
-    brands = df_stations["brand"].dropna().unique().tolist() or ["BrandA","BrandB","BrandC"]
-    fuels  = df_stations["fuel_type"].dropna().unique().tolist() or ["diesel","gasoline"]
-    for q in range(n_queries):
-        vehicle_type = rng.choice(["car","van","truck"], p=[0.55,0.35,0.10])
-        price_area_mean = float(np.clip(rng.normal(1.62, 0.04), 1.45, 1.80))
-        liters_needed = float(np.clip(rng.normal(42, 8), 12, 70))
-        for _ in range(cand_per_q):
-            brand = rng.choice(brands)
-            fuel  = rng.choice(fuels)
-            price = float(np.clip(price_area_mean + rng.normal(0,0.03), 1.40, 1.85))
-            detour= float(np.clip(abs(rng.normal(1.0, 1.0)), 0, 10))
-            wait  = float(np.clip(rng.normal(3,2), 0, 20))
-
-            saving = (price_area_mean - price) * liters_needed
-            penalty = detour*0.18 + 0.05*wait
-            utility = saving - penalty + (0.05 if brand=="BrandB" else 0.0)
-
-            rows.append(dict(
-                query_id=q, brand=brand, fuel_type=fuel, vehicle_type=vehicle_type,
-                price_per_liter=price, wait_min=wait, detour_km=detour,
-                liters_needed=liters_needed, price_area_mean=price_area_mean,
-                delta_price=price_area_mean - price, utility=utility
-            ))
-    df = pd.DataFrame(rows)
-    # relevancia binaria (mejor por utilidad)
-    df["rel"] = 0
-    df.loc[df.groupby("query_id")["utility"].idxmax(), "rel"] = 1
+def _sintetizar_campos_faltantes(puntos: pd.DataFrame) -> pd.DataFrame:
+    df = puntos.copy()
+    if "precio_litro" not in df.columns:
+        df["precio_litro"] = (1.50 + (df.index % 7) * 0.01).clip(1.35, 1.95)
+    if "minutos_espera" not in df.columns:
+        df["minutos_espera"] = (df.index % 10) + 1
+    if "tipo_combustible" not in df.columns:
+        df["tipo_combustible"] = ["diesel" if i % 2 == 0 else "gasolina" for i in range(len(df))]
     return df
 
-def fit_pipeline(df_train: pd.DataFrame):
+def construir_entrenamiento_sintetico(puntos: pd.DataFrame, n_consultas=250, cand_por_q=6, seed=42):
+    rng = np.random.default_rng(seed)
+    puntos = _sintetizar_campos_faltantes(puntos)
+    rows=[]
+    marcas = puntos["marca"].dropna().unique().tolist() or ["BrandA","BrandB"]
+    fuels  = puntos["tipo_combustible"].dropna().unique().tolist() or ["diesel","gasolina"]
+    carrets= puntos["carretera"].dropna().unique().tolist() or ["A-1","A-2"]
+    for q in range(n_consultas):
+        precio_area = float(np.clip(rng.normal(1.62, 0.04), 1.45, 1.95))
+        litros = float(np.clip(rng.normal(42, 8), 12, 70))
+        for _ in range(cand_por_q):
+            marca = rng.choice(marcas); fuel = rng.choice(fuels); carr = rng.choice(carrets)
+            precio = float(np.clip(precio_area + rng.normal(0,0.03), 1.40, 1.95))
+            desvio = float(np.clip(abs(rng.normal(1.0, 1.0)), 0, 10))
+            espera = float(np.clip(rng.normal(3,2), 0, 20))
+            ahorro = max(0.0, precio_area - precio) * litros
+            penal = desvio*0.18 + 0.05*espera + 0.1  # +0.1 por ruido
+            utilidad = ahorro - penal + (0.05 if marca == "Repsol" else 0.0)
+            rows.append(dict(
+                consulta_id=q,
+                marca=marca, tipo_combustible=fuel, carretera=carr,
+                precio_litro=precio, minutos_espera=espera, desvio_km=desvio,
+                litros_necesarios=litros, precio_area_medio=precio_area,
+                delta_precio=precio_area - precio, utilidad=utilidad
+            ))
+    df = pd.DataFrame(rows)
+    df["rel"] = 0
+    df.loc[df.groupby("consulta_id")["utilidad"].idxmax(), "rel"] = 1
+    return df
+
+def ajustar_pipeline(df_train: pd.DataFrame):
     pre = ColumnTransformer([
         ("num", StandardScaler(), NUM),
         ("cat", OneHotEncoder(handle_unknown="ignore"), CAT)
     ])
-    # Intentamos LGBM Ranker (LambdaRank). Si no está disponible, fallback a RF
     try:
         import lightgbm as lgb
-        model = lgb.LGBMRanker(objective="lambdarank", n_estimators=300,
+        model = lgb.LGBMRanker(objective="lambdarank", n_estimators=350,
                                learning_rate=0.08, num_leaves=63,
                                subsample=0.9, colsample_bytree=0.9, random_state=42)
         pipe = Pipeline([("pre", pre), ("ranker", model)])
-        groups = df_train.groupby("query_id").size().to_list()
-        X = df_train[NUM+CAT]; y = df_train["rel"]
-        pipe.fit(X, y, ranker__group=groups)
-        return pipe, {"used":"lightgbm"}
+        X = df_train[NUM+CAT]; y = df_train["rel"].values
+        grupos = df_train.groupby("consulta_id").size().to_list()
+        pipe.fit(X, y, ranker__group=grupos)
+        return pipe, {"modelo":"lightgbm_ranker","filas":int(len(df_train))}
     except Exception:
         from sklearn.ensemble import RandomForestRegressor
-        model = RandomForestRegressor(n_estimators=300, random_state=42)
+        model = RandomForestRegressor(n_estimators=350, random_state=42)
         pipe = Pipeline([("pre", pre), ("rf", model)])
-        X = df_train[NUM+CAT]; y = df_train["utility"]
+        X = df_train[NUM+CAT]; y = df_train["utilidad"].values
         pipe.fit(X, y)
-        return pipe, {"used":"random_forest_regression_fallback"}
+        return pipe, {"modelo":"random_forest_regression_fallback","filas":int(len(df_train))}
