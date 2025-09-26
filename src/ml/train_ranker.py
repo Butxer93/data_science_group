@@ -10,7 +10,7 @@ CAT = ["marca","tipo_combustible","carretera"]
 
 # ----------------- utilidades métrica -----------------
 def ndcg_at_k(rel, k=5):
-    rel = np.asfarray(rel)[:k]
+    rel = np.asarray(rel)[:k]
     dcg = np.sum((2**rel - 1) / np.log2(np.arange(2, rel.size + 2)))
     rel_sorted = np.sort(rel)[::-1]
     idcg = np.sum((2**rel_sorted - 1) / np.log2(np.arange(2, rel_sorted.size + 2)))

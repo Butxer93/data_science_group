@@ -1,12 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-import joblib
 
 from src.ml.habits_efficiency import (
-    entrenar_habitos_sintetico,
-    cargar_modelos_habitos,
-    guardar_modelos_habitos,
+    entrenar_habitos,
+    entrenar_habitos_sintetico,  # compat
+    cargar_modelos_habitos,      # vía model_store
     FEATURES_HABITOS
 )
 
@@ -22,31 +20,28 @@ def health():
     return {"ok": True, "clasificador": cls is not None, "clustering": clu is not None}
 
 @app.post("/ml/habitos/entrenar")
-def entrenar_habitos():
-    clf_bundle, clu_bundle, reglas_path = entrenar_habitos_sintetico()
-    guardar_modelos_habitos(clf_bundle, clu_bundle)
-    return {"ok": True, "features": FEATURES_HABITOS, "reglas": str(reglas_path)}
+def entrenar_habitos_endpoint(optimized: bool = Query(False, description="Activa grid CV para RF y selección k por silhouette")):
+    clf_bundle, clu_bundle, reglas_path, meta = entrenar_habitos(optimized=optimized)
+    return {"ok": True, "features": FEATURES_HABITOS, "reglas": str(reglas_path), "meta": meta}
 
 @app.post("/ml/habitos/predict")
 def predecir(payload: dict):
-    # Validación mínima
     feats = [payload.get(k) for k in FEATURES_HABITOS]
     if any(v is None for v in feats):
         raise HTTPException(400, f"Faltan variables: {FEATURES_HABITOS}")
 
-    clf, clu, reglas = cargar_modelos_habitos()
-    if clf is None:
+    cls, clu, reglas = cargar_modelos_habitos()
+    if cls is None:
         raise HTTPException(503, "Clasificador no entrenado. Llama a /ml/habitos/entrenar")
 
-    eff = int(clf["model"].predict([feats])[0])
+    eff = int(cls["model"].predict([feats])[0])
     prob = None
     try:
-        prob = float(clf["model"].predict_proba([feats])[0][1])
+        prob = float(cls["model"].predict_proba([feats])[0][1])
     except Exception:
         pass
 
-    cluster_id = None
-    tips = []
+    cluster_id, tips = None, []
     if clu is not None:
         cluster_id = int(clu["pipeline"].predict([feats])[0])
         tips = (reglas.get("rules_by_cluster", {}).get(str(cluster_id), [])
