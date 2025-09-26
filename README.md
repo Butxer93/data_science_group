@@ -11,3 +11,5 @@
 ## Instalación
 ```bash
 uv sync
+
+uv run fastapi dev app/api.py
