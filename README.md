@@ -15,6 +15,9 @@ uv run fastapi dev app/api.py --reload-dir .
 # docs:  http://localhost:8000/docs
 # redoc: http://localhost:8000/redoc
 # home:  http://localhost:8000/
+
+# streamlit
+uv run streamlit run streamlit_app.py
 ```
 
 ##  Flujo sugerido:
