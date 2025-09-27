@@ -1,74 +1,21 @@
-# src/utils.py
-from __future__ import annotations
+# src/data/sintetico.py
 from pathlib import Path
-import math
 import numpy as np
 import pandas as pd
 
-# --------------------------
-# Geometría / distancias
-# --------------------------
-def _haversine_km(lat1, lon1, lat2, lon2) -> float:
-    R = 6371.0
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlmb = math.radians(lon2 - lon1)
-    a = (math.sin(dphi/2)**2 +
-         math.cos(p1) * math.cos(p2) * math.sin(dlmb/2)**2)
-    return 2 * R * math.asin(math.sqrt(a))
+ROOT = Path(__file__).resolve().parents[2]
+DATA = ROOT / "data"
+DATA.mkdir(parents=True, exist_ok=True)
 
-def _dist_point_to_segment_km(p, a, b) -> float:
-    # p, a, b as (lat, lon)
-    # Project p onto segment ab and get minimal distance
-    # rough planar approximation using small-scale
-    (x, y), (x1, y1), (x2, y2) = (p[0], p[1]), (a[0], a[1]), (b[0], b[1])
-    dx, dy = x2 - x1, y2 - y1
-    if dx == 0 and dy == 0:
-        return _haversine_km(x, y, x1, y1)
-    t = ((x - x1)*dx + (y - y1)*dy) / (dx*dx + dy*dy)
-    t = max(0.0, min(1.0, t))
-    proj = (x1 + t*dx, y1 + t*dy)
-    return _haversine_km(x, y, proj[0], proj[1])
+_rng = np.random.default_rng(42)
 
-def distancia_a_polilinea_km(p: tuple[float,float], poly: list[tuple[float,float]]) -> float:
-    if not poly:
-        return float("inf")
-    best = float("inf")
-    for i in range(len(poly)-1):
-        d = _dist_point_to_segment_km(p, poly[i], poly[i+1])
-        if d < best:
-            best = d
-    return best
-
-def generar_polilinea_desde_rutas(ruta_id: str, df_rutas: pd.DataFrame) -> list[tuple[float,float]]:
-    sub = df_rutas[df_rutas["ruta_id"].astype(str) == str(ruta_id)].copy()
-    if sub.empty:
-        return []
-    sub = sub.sort_values("km_desde_origen")
-    return list(zip(sub["latitud"].astype(float), sub["longitud"].astype(float)))
-
-# --------------------------
-# Escribir .csv de datos sintéticos
-# --------------------------
-
-def _write_csv(df: pd.DataFrame, path: Path):
-    # Evita líneas en blanco y filas totalmente vacías
-    df = df.dropna(how="all").copy()
-    # Limpia espacios en cabeceras y valores string
-    df.columns = df.columns.map(lambda s: str(s).strip())
-    for c in df.select_dtypes(include=["object"]).columns:
-        df[c] = df[c].astype(str).str.strip()
-    df.to_csv(path, index=False, encoding="utf-8", lineterminator="\n")
-
-# --------------------------
-# Generación de datos sintéticos
-# --------------------------
-def _gen_puntos_repostaje_csv(out_dir: Path, n=350, seed=42) -> int:
-    rng = np.random.default_rng(seed)
+def gen_puntos_repostaje(n=350, rng=None) -> int:
+    rng = rng or _rng
     marcas = ["Repsol", "Cepsa", "Shell", "Galp", "BP", "Petronor"]
     carreteras = ["A-1","A-2","A-3","A-4","A-5","AP-2","AP-7"]
     servicios_pool = ["24H","WC","Tienda","Restaurante","Aire","Agua","Autolavado"]
     base_lat, base_lon = 40.4168, -3.7038
+
     rows=[]
     for i in range(n):
         marca = rng.choice(marcas)
@@ -80,6 +27,7 @@ def _gen_puntos_repostaje_csv(out_dir: Path, n=350, seed=42) -> int:
         precio = float(np.clip(1.55 + rng.normal(0, 0.05), 1.40, 1.90))
         espera = int(np.clip(rng.normal(4, 3), 0, 20))
         fuel = rng.choice(["diesel","gasolina"], p=[0.6,0.4])
+
         rows.append(dict(
             punto_id=f"P{i+1:04d}",
             nombre_estacion=nombre,
@@ -94,11 +42,11 @@ def _gen_puntos_repostaje_csv(out_dir: Path, n=350, seed=42) -> int:
             tipo_combustible=fuel
         ))
     df = pd.DataFrame(rows)
-    _write_csv(df, out_dir / "puntos_repostaje.csv")
+    (DATA / "puntos_repostaje.csv").write_text(df.to_csv(index=False), encoding="utf-8")
     return len(df)
 
-def _gen_rutas_csv(out_dir: Path, n_rutas=5, puntos_por_ruta=70, seed=42) -> int:
-    rng = np.random.default_rng(seed)
+def gen_rutas(n_rutas=5, puntos_por_ruta=70, rng=None) -> int:
+    rng = rng or _rng
     base_pairs = [
         ((40.4168,-3.7038),(41.3874, 2.1686),"Madrid-Barcelona"),
         ((40.4168,-3.7038),(39.4699,-0.3763),"Madrid-Valencia"),
@@ -125,11 +73,11 @@ def _gen_rutas_csv(out_dir: Path, n_rutas=5, puntos_por_ruta=70, seed=42) -> int
                 km_desde_origen=km
             ))
     df = pd.DataFrame(rows).sort_values(["ruta_id","km_desde_origen"])
-    _write_csv(df, out_dir / "rutas.csv")
+    (DATA / "rutas.csv").write_text(df.to_csv(index=False), encoding="utf-8")
     return len(df)
 
-def _gen_puntos_ev_csv(out_dir: Path, n=220, seed=42) -> int:
-    rng = np.random.default_rng(seed)
+def gen_puntos_recarga(n=220, rng=None) -> int:
+    rng = rng or _rng
     operadores = ["Iberdrola","Endesa","Zunder","Wenea","Tesla","Ionnity"]
     conectores = ["CCS2","Type2","CHAdeMO"]
     carreteras = ["A-1","A-2","AP-2","AP-7","A-3","A-5"]
@@ -157,11 +105,11 @@ def _gen_puntos_ev_csv(out_dir: Path, n=220, seed=42) -> int:
             disponible_24h=rng.choice(["si","no"], p=[0.7,0.3])
         ))
     df = pd.DataFrame(rows)
-    _write_csv(df, out_dir / "puntos_recarga_electrica.csv")
+    (DATA / "puntos_recarga_electrica.csv").write_text(df.to_csv(index=False), encoding="utf-8")
     return len(df)
 
-def _gen_beneficios_csv(out_dir: Path, n_tarjetas=6, seed=42) -> int:
-    rng = np.random.default_rng(seed)
+def gen_beneficios_tarjeta(n_tarjetas=6, rng=None) -> int:
+    rng = rng or _rng
     marcas = ["Repsol","Cepsa","Shell","Galp","BP","Petronor"]
     pool_nombres = ["MiTarjeta","SuperAhorrador","MaxDescuento","ProFleet","EcoPlus","RutaPro"]
     rows=[]
@@ -182,18 +130,13 @@ def _gen_beneficios_csv(out_dir: Path, n_tarjetas=6, seed=42) -> int:
             estaciones_incluidas=estaciones
         ))
     df = pd.DataFrame(rows)
-    _write_csv(df, out_dir / "beneficios_tarjeta.csv")
+    (DATA / "beneficios_tarjeta.csv").write_text(df.to_csv(index=False), encoding="utf-8")
     return len(df)
 
-def generar_todo_sintetico(out_dir: Path, n_puntos=350, n_rutas=5, puntos_por_ruta=70, n_ev=220, n_tarjetas=6) -> dict:
-    out_dir.mkdir(parents=True, exist_ok=True)
+def generar_todo(n_puntos=350, n_rutas=5, puntos_por_ruta=70, n_ev=220, n_tarjetas=6) -> dict:
     return {
-        "puntos_repostaje": _gen_puntos_repostaje_csv(out_dir, n_puntos),
-        "rutas": _gen_rutas_csv(out_dir, n_rutas, puntos_por_ruta),
-        "puntos_recarga_electrica": _gen_puntos_ev_csv(out_dir, n_ev),
-        "beneficios_tarjeta": _gen_beneficios_csv(out_dir, n_tarjetas),
+        "puntos_repostaje": gen_puntos_repostaje(n_puntos),
+        "rutas": gen_rutas(n_rutas, puntos_por_ruta),
+        "puntos_recarga_electrica": gen_puntos_recarga(n_ev),
+        "beneficios_tarjeta": gen_beneficios_tarjeta(n_tarjetas),
     }
-
-def write_csv(df: pd.DataFrame, path: Path):
-    """Escritura robusta (sin líneas en blanco, strip de strings)."""
-    _write_csv(df, path)

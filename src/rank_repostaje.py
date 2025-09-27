@@ -1,83 +1,82 @@
+# src/rank_repostaje.py
+from __future__ import annotations
+import math
+import numpy as np
 import pandas as pd
+from typing import List, Dict, Any, Optional
 
-def precio_con_tarjeta(precio_litro: float, nombre_estacion: str, df_beneficios: pd.DataFrame, tarjeta: str|None):
-    if df_beneficios is None or tarjeta is None:
-        return precio_litro
-    # Filtra tarjeta
+def _precio_neto_con_tarjeta(row: dict, tarjeta: Optional[str], df_beneficios: Optional[pd.DataFrame]) -> float:
+    precio = float(row.get("precio_litro", 0.0))
+    if not tarjeta or df_beneficios is None or df_beneficios.empty:
+        return precio
     sub = df_beneficios[df_beneficios["tarjeta"].astype(str).str.lower() == str(tarjeta).lower()]
     if sub.empty:
-        return precio_litro
-    precio = precio_litro
-    for _, row in sub.iterrows():
-        estaciones = str(row.get("estaciones_incluidas","")).split("|")
-        estaciones = [e.strip().lower() for e in estaciones if e.strip()]
-        if nombre_estacion.lower() in estaciones or not estaciones:
-            # aplica descuento
-            if pd.notna(row.get("centimos_litro")):
-                try: precio -= float(row["centimos_litro"]) / 100.0
-                except: pass
-            if pd.notna(row.get("porcentaje")):
-                try: precio *= max(0.0, 1.0 - float(row["porcentaje"]) / 100.0)
-                except: pass
-    return max(precio, 0.0)
+        return precio
+    cents = sub["centimos_litro"].astype(str).replace("", "0").astype(float).fillna(0.0).max()
+    pct = sub["porcentaje"].astype(str).replace("", "0").astype(float).fillna(0.0).max() / 100.0
+    # si hay estaciones explícitas, chequeo naive por nombre_estacion
+    nombres = "|".join(sub["estaciones_incluidas"].fillna("").tolist())
+    aplica = True
+    if nombres.strip():
+        aplica = any(n.strip() and n.strip() in str(row.get("nombre_estacion", "")) for n in nombres.split("|"))
+    if not aplica:
+        return precio
+    precio = max(0.0, precio - cents/100.0)
+    precio = precio * (1.0 - pct)
+    return float(precio)
 
-def puntuacion_baseline(st, ctx, df_beneficios=None):
-    litros = float(ctx.get("litros_necesarios", 40.0))
-    precio_area = float(ctx.get("precio_area_medio", st.get("precio_litro", 0.0)))
-    precio_bruto = float(st.get("precio_litro", precio_area))
-    precio_net = precio_con_tarjeta(precio_bruto, st.get("nombre_estacion",""), df_beneficios, ctx.get("tarjeta"))
+def _features_para_modelo(cand: List[dict], ctx: dict, df_beneficios: Optional[pd.DataFrame]) -> pd.DataFrame:
+    rows = []
+    for r in cand:
+        pn = _precio_neto_con_tarjeta(r, ctx.get("tarjeta"), df_beneficios)
+        rows.append({
+            "marca": r.get("marca"),
+            "tipo_combustible": r.get("tipo_combustible"),
+            "carretera": r.get("carretera"),
+            "delta_precio": float(ctx["precio_area_medio"]) - float(r.get("precio_litro", pn)),
+            "desvio_km": float(r.get("desvio_km", 0.0)),
+            "minutos_espera": float(r.get("minutos_espera", 0.0)),
+            "litros_necesarios": float(ctx["litros_necesarios"]),
+            "precio_neto": pn,
+            "precio_litro": float(r.get("precio_litro", pn)),
+            "nombre_estacion": r.get("nombre_estacion"),
+            "punto_id": r.get("punto_id"),
+            "latitud": r.get("latitud"),
+            "longitud": r.get("longitud"),
+        })
+    return pd.DataFrame(rows)
 
-    delta_precio = max(0.0, precio_area - precio_net)
-    ahorro = delta_precio * litros
+def _heuristica_score(df: pd.DataFrame, ctx: dict, w_c=0.6, w_d=0.3, w_t=0.1) -> np.ndarray:
+    ahorro = (ctx["precio_area_medio"] - df["precio_litro"].astype(float)) * ctx["litros_necesarios"]
+    coste_desvio = df["desvio_km"].astype(float) * ctx.get("eur_por_km", 0.18)
+    penal_tiempo = df["minutos_espera"].astype(float) * ctx.get("beta_espera", 0.05)
+    score = w_c * ahorro - w_d * coste_desvio - w_t * penal_tiempo
+    return score.values
 
-    desvio = float(st.get("desvio_km", 0.0))
-    coste_desvio = desvio * float(ctx.get("eur_por_km", 0.18))
-
-    espera = float(st.get("minutos_espera", 0.0))
-    coste_espera = float(ctx.get("beta_espera", 0.05)) * espera
-
-    # CO2 (sintético): 2.64 kg/L para diésel/gasolina; 0 si EV (no aplica en combustible)
-    co2_parada = 2.64 * litros
-    coste_co2 = float(ctx.get("precio_sombra_co2", 0.0)) * co2_parada
-
-    return (ctx.get("w_ahorro",1.0)*ahorro
-            - ctx.get("w_desvio",1.0)*coste_desvio
-            - ctx.get("w_espera",1.0)*coste_espera
-            - ctx.get("w_co2",1.0)*coste_co2)
-
-def rankear_candidatos(candidatos, contexto, df_beneficios=None, pipe=None):
-    out = []
+def rankear_candidatos(candidatos: List[dict], contexto: dict,
+                       df_beneficios: Optional[pd.DataFrame] = None,
+                       pipe=None) -> List[Dict[str, Any]]:
+    df = _features_para_modelo(candidatos, contexto, df_beneficios)
     if pipe is not None:
-        import pandas as pd
-        X = pd.DataFrame([{
-            "delta_precio": contexto["precio_area_medio"] - precio_con_tarjeta(
-                c.get("precio_litro", contexto["precio_area_medio"]),
-                c.get("nombre_estacion",""),
-                df_beneficios, contexto.get("tarjeta")
-            ),
-            "desvio_km": c.get("desvio_km", 0.0),
-            "minutos_espera": c.get("minutos_espera", 0.0),
-            "litros_necesarios": contexto["litros_necesarios"],
-            "marca": c.get("marca",""),
-            "tipo_combustible": c.get("tipo_combustible",""),
-            "carretera": c.get("carretera","")
-        } for c in candidatos])
         try:
+            X = df[["delta_precio","desvio_km","minutos_espera","litros_necesarios","marca","tipo_combustible","carretera"]]
             scores = pipe.predict(X)
         except Exception:
-            scores = [puntuacion_baseline(c, contexto, df_beneficios) for c in candidatos]
-        for c, sc in zip(candidatos, scores):
-            d = dict(c); d["score"] = float(sc); d["precio_neto"] = precio_con_tarjeta(
-                c.get("precio_litro", contexto["precio_area_medio"]),
-                c.get("nombre_estacion",""), df_beneficios, contexto.get("tarjeta")
-            )
-            out.append(d)
+            scores = _heuristica_score(df, contexto)
     else:
-        for c in candidatos:
-            d = dict(c); d["precio_neto"] = precio_con_tarjeta(
-                c.get("precio_litro", contexto["precio_area_medio"]),
-                c.get("nombre_estacion",""), df_beneficios, contexto.get("tarjeta")
-            )
-            d["score"] = puntuacion_baseline(c, contexto, df_beneficios)
-            out.append(d)
-    return sorted(out, key=lambda x: x["score"], reverse=True)
+        scores = _heuristica_score(df, contexto)
+    df["score"] = scores
+    # recomputar precio_neto en salida
+    df["precio_neto"] = df.apply(lambda r: _precio_neto_con_tarjeta(r.to_dict(), contexto.get("tarjeta"), df_beneficios), axis=1)
+    # devolver integrando algunos campos
+    out = []
+    for _, r in df.sort_values("score", ascending=False).iterrows():
+        out.append({
+            **{k: r.get(k) for k in ["punto_id","nombre_estacion","marca","carretera","latitud","longitud","tipo_combustible"]},
+            "precio_litro": float(r["precio_litro"]),
+            "precio_neto": float(r["precio_neto"]),
+            "minutos_espera": float(r["minutos_espera"]),
+            "desvio_km": float(r["desvio_km"]),
+            "score": float(r["score"]),
+        })
+    return out
