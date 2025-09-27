@@ -16,7 +16,9 @@ uv run fastapi dev app/api.py --reload-dir .
 # redoc: http://localhost:8000/redoc
 # home:  http://localhost:8000/
 
-# streamlit
+# streamlit_app.py
+# Dashboard auxiliar: Repostaje + Hábitos (API unificada)
+# Ejecuta: uv run streamlit run streamlit_app.py
 uv run streamlit run streamlit_app.py
 ```
 
