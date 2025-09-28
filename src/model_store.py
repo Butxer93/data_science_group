@@ -1,38 +1,51 @@
+from __future__ import annotations
 from pathlib import Path
-import os, joblib, json
+import json
+import joblib
+from typing import Optional, Tuple
 
-ROOT = Path(__file__).resolve().parents[1]
-MODELS = ROOT / "models"
+# -------------------------
+# Rutas y guardado/carga
+# -------------------------
+def _ensure_dir(d: Path):
+    d.mkdir(parents=True, exist_ok=True)
 
-# Rutas de artefactos
-RANKER_REPOSTAJE = MODELS / "rank_repostaje_pipe.joblib"
-HABITS_CLS = MODELS / "habits_classifier.joblib"
-HABITS_CLU = MODELS / "habits_clusters.joblib"
-HABITS_RULES = MODELS / "habits_rules.json"
+def guardar_ranker_repostaje(pipe, models_dir: Path):
+    models_dir = Path(models_dir)
+    _ensure_dir(models_dir)
+    joblib.dump(pipe, models_dir / "rank_repostaje_pipe.joblib")
 
-def cargar_ranker_repostaje():
-    return joblib.load(RANKER_REPOSTAJE) if RANKER_REPOSTAJE.exists() else None
+def cargar_ranker_repostaje(models_dir: Path):
+    models_dir = Path(models_dir)
+    p = models_dir / "rank_repostaje_pipe.joblib"
+    if not p.exists():
+        return None
+    return joblib.load(p)
 
-def guardar_ranker_repostaje(pipe):
-    MODELS.mkdir(parents=True, exist_ok=True)
-    joblib.dump(pipe, RANKER_REPOSTAJE)
+def guardar_modelos_habitos(clf_bundle: dict, clu_bundle: dict, rules_path: Path, models_dir: Path):
+    models_dir = Path(models_dir)
+    _ensure_dir(models_dir)
+    joblib.dump(clf_bundle, models_dir / "habits_classifier.joblib")
+    joblib.dump(clu_bundle, models_dir / "habits_clusters.joblib")
+    # rules ya se guardó en rules_path
 
-def pesos_por_politica(prioridad: str):
-    # pesos y precio sombra de CO2: coste vs sostenible
-    if prioridad == "sostenible":
-        return {"w_ahorro":1.0, "w_desvio":1.0, "w_espera":1.0, "w_co2":1.0, "precio_sombra_co2": 0.2}
+def cargar_modelos_habitos(models_dir: Path) -> Tuple[Optional[dict], Optional[dict], dict]:
+    models_dir = Path(models_dir)
+    p1 = models_dir / "habits_classifier.joblib"
+    p2 = models_dir / "habits_clusters.joblib"
+    p3 = models_dir / "habits_rules.json"
+    cls = joblib.load(p1) if p1.exists() else None
+    clu = joblib.load(p2) if p2.exists() else None
+    rules = json.loads(p3.read_text(encoding="utf-8")) if p3.exists() else {}
+    return cls, clu, rules
+
+# -------------------------
+# Políticas de pesos
+# -------------------------
+def pesos_por_politica(prioridad: str) -> dict:
+    # pesos para heurística (sólo si no hay modelo)
     if prioridad == "coste":
-        return {"w_ahorro":1.0, "w_desvio":1.0, "w_espera":1.0, "w_co2":0.2, "precio_sombra_co2": 0.0}
-    return {"w_ahorro":1.0, "w_desvio":1.0, "w_espera":1.0, "w_co2":0.5, "precio_sombra_co2": 0.1}
-
-# Hábitos
-def cargar_modelos_habitos():
-    cls = joblib.load(HABITS_CLS) if HABITS_CLS.exists() else None
-    clu = joblib.load(HABITS_CLU) if HABITS_CLU.exists() else None
-    reglas = json.loads(HABITS_RULES.read_text(encoding="utf-8")) if HABITS_RULES.exists() else {"rules_by_cluster": {}}
-    return cls, clu, reglas
-
-def guardar_modelos_habitos(clf_bundle, clu_bundle):
-    MODELS.mkdir(parents=True, exist_ok=True)
-    joblib.dump(clf_bundle, HABITS_CLS)
-    joblib.dump(clu_bundle, HABITS_CLU)
+        return {"w_coste": 0.7, "w_desvio": 0.2, "w_tiempo": 0.1}
+    if prioridad == "sostenible":
+        return {"w_coste": 0.5, "w_desvio": 0.3, "w_tiempo": 0.2}
+    return {"w_coste": 0.6, "w_desvio": 0.3, "w_tiempo": 0.1}

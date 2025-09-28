@@ -1,5 +1,0 @@
-punto_id,nombre_estacion,marca,latitud,longitud,carretera,direccion,servicios,precio_litro,minutos_espera,tipo_combustible
-P001,Estación Norte,Repsol,40.50,-3.70,A-1,Madrid,24H|WC|Tienda,1.59,5,diesel
-P002,Estación Este,Cepsa,40.60,-3.80,A-2,Alcalá,WC|Restaurante,1.66,3,gasolina
-P003,Estación Sur,Shell,41.00,-3.50,A-1,Segovia,24H|Aire|Agua,1.57,7,diesel
-

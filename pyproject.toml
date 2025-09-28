@@ -1,7 +1,7 @@
 [project]
 name = "data_science_group"
-version = "0.2.0"
-description = "App de recomendaciones de ahorro (repostaje) y hábitos eficientes para gestión de clientes/flotas."
+version = "1.0.1"
+description = "API unificada: Recomendaciones de repostaje y hábitos eficientes para clientes/flotas."
 readme = "README.md"
 requires-python = ">=3.12"
 
@@ -10,9 +10,10 @@ dependencies = [
   "pandas>=2.2",
   "numpy>=1.26",
   "scikit-learn>=1.4",
-  "lightgbm>=4.0",          # LTR Ranker (fallback si no disponible)
+  "lightgbm>=4.0",
   "python-multipart>=0.0.9",
   "joblib>=1.4",
+  "streamlit>=1.36"
 ]
 
 [project.optional-dependencies]
@@ -30,7 +31,7 @@ build-backend = "hatchling.build"
 packages = ["app", "src"]
 
 [tool.hatch.build.targets.sdist]
-include = ["app", "src", "data", "models", "README.md", "pyproject.toml"]
+include = ["app", "src", "data", "models", "README.md", "pyproject.toml", "notebooks", "informes"]
 
 [tool.uv]
 managed = true
